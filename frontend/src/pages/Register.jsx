@@ -1,35 +1,51 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Toast from '../components/Toast';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Register = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState(null);
     const navigate = useNavigate();
+
+    const showToast = (message, type) => {
+        setToast({ message, type });
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        if (!name || !email || !password) {
+            showToast('Please fill in all fields', 'error');
+            return;
+        }
+        
+        setLoading(true);
         try {
-            console.log("Sending request to http://localhost:8080/api/customers/register");
             const response = await axios.post('http://localhost:8080/api/customers/register', { name, email, password });
-            console.log("Response:", response);
             
             // Store JWT token and auto-login
             sessionStorage.setItem('token', response.data);
             sessionStorage.setItem('user', email);
             
-            alert('Registration successful! You are now logged in.');
-            window.location.href = '/dashboard';
+            showToast('Registration successful! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1500);
         } catch (err) {
             console.error("Registration Error:", err);
             let errorMessage = 'Registration failed';
             if (err.response) {
-                errorMessage += ` (${err.response.status}): ${err.response.data?.message || err.response.statusText || 'Server error'}`;
+                errorMessage = err.response.data?.message || err.response.statusText || 'Server error';
             } else {
-                errorMessage += `: ${err.message}`;
+                errorMessage = err.message;
             }
-            alert(errorMessage);
+            showToast(errorMessage, 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -59,9 +75,18 @@ const Register = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
-                    <button type="submit" className="btn-primary">Register</button>
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                        {loading ? <LoadingSpinner size="20px" /> : 'Register'}
+                    </button>
                 </form>
             </div>
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
         </div>
     );
 };

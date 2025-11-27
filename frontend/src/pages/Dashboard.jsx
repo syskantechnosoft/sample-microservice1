@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import Toast from '../components/Toast';
+import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Dashboard = () => {
     const [customer, setCustomer] = useState(null);
     const [accounts, setAccounts] = useState([]);
     const [loans, setLoans] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [toast, setToast] = useState(null);
+    const [modal, setModal] = useState({ isOpen: false, type: '', accountId: null });
+    const [amount, setAmount] = useState('');
     const userEmail = sessionStorage.getItem('user');
     const token = sessionStorage.getItem('token');
+
+    const showToast = (message, type) => {
+        setToast({ message, type });
+    };
 
     const api = axios.create({
         baseURL: 'http://localhost:8080/api',
@@ -67,42 +77,43 @@ const Dashboard = () => {
         }
     };
 
-    const handleDeposit = async (accountId) => {
-        const amount = prompt('Enter deposit amount:');
-        if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-            try {
-                await api.post('/accounts/deposit', {
-                    accountId: parseInt(accountId),
-                    amount: parseFloat(amount)
-                });
-                window.location.reload();
-            } catch (err) {
-                alert('Deposit failed: ' + (err.response?.data?.message || err.message));
-            }
-        }
+    const openModal = (type, accountId = null) => {
+        setModal({ isOpen: true, type, accountId });
+        setAmount('');
     };
 
-    const handleWithdraw = async (accountId) => {
-        const amount = prompt('Enter withdrawal amount:');
-        if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-            try {
-                await api.post('/accounts/withdraw', {
-                    accountId: parseInt(accountId),
-                    amount: parseFloat(amount)
-                });
-                window.location.reload();
-            } catch (err) {
-                alert('Withdrawal failed: ' + (err.response?.data?.message || err.message));
-            }
+    const closeModal = () => {
+        setModal({ isOpen: false, type: '', accountId: null });
+        setAmount('');
+    };
+
+    const handleTransaction = async () => {
+        if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+            showToast('Please enter a valid amount', 'error');
+            return;
+        }
+
+        try {
+            const endpoint = modal.type === 'deposit' ? '/accounts/deposit' : '/accounts/withdraw';
+            await api.post(endpoint, {
+                accountId: parseInt(modal.accountId),
+                amount: parseFloat(amount)
+            });
+            showToast(`${modal.type === 'deposit' ? 'Deposit' : 'Withdrawal'} successful!`, 'success');
+            closeModal();
+            const accRes = await api.get(`/accounts/user/${customer.id}`);
+            setAccounts(accRes.data);
+        } catch (err) {
+            showToast(`${modal.type === 'deposit' ? 'Deposit' : 'Withdrawal'} failed: ${err.response?.data?.message || err.message}`, 'error');
         }
     };
 
     const handleEmiPayment = async (loanId) => {
         try {
             await api.post(`/loans/${loanId}/pay-emi`);
-            alert('EMI payment successful!');
+            showToast('EMI payment successful!', 'success');
         } catch (err) {
-            alert('EMI payment failed: ' + (err.response?.data?.message || err.message));
+            showToast('EMI payment failed: ' + (err.response?.data?.message || err.message), 'error');
         }
     };
 
@@ -135,14 +146,14 @@ const Dashboard = () => {
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button 
-                                            onClick={() => handleDeposit(acc.id)} 
+                                            onClick={() => openModal('deposit', acc.id)} 
                                             className="btn-primary" 
                                             style={{ padding: '6px 12px', fontSize: '0.75rem', background: '#10b981' }}
                                         >
                                             Deposit
                                         </button>
                                         <button 
-                                            onClick={() => handleWithdraw(acc.id)} 
+                                            onClick={() => openModal('withdraw', acc.id)} 
                                             className="btn-primary" 
                                             style={{ padding: '6px 12px', fontSize: '0.75rem', background: '#ef4444' }}
                                         >

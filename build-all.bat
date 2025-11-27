@@ -1,0 +1,26 @@
+@echo off
+echo Building all Docker images...
+
+echo Building Config Server...
+docker build -t banking/config-server ./config-server
+
+echo Building Discovery Server...
+docker build -t banking/discovery-server ./discovery-server
+
+echo Building API Gateway...
+docker build -t banking/api-gateway ./api-gateway
+
+echo Building Customer Service...
+docker build -t banking/customer-service ./customer-service
+
+echo Building Account Service...
+docker build -t banking/account-service ./account-service
+
+echo Building Loan Service...
+docker build -t banking/loan-service ./loan-service
+
+echo Building Frontend...
+docker build -t banking/frontend ./frontend
+
+echo All images built successfully!
+pause

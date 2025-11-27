@@ -1,28 +1,48 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import Toast from '../components/Toast';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [toast, setToast] = useState(null);
     const navigate = useNavigate();
+
+    const showToast = (message, type) => {
+        setToast({ message, type });
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        if (!email || !password) {
+            showToast('Please fill in all fields', 'error');
+            return;
+        }
+        
+        setLoading(true);
         try {
             const res = await axios.post('http://localhost:8080/api/customers/login', { email, password });
             sessionStorage.setItem('token', res.data);
             sessionStorage.setItem('user', email);
-            window.location.href = '/dashboard';
+            
+            showToast('Login successful! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1500);
         } catch (err) {
             console.error('Login Error:', err);
-            let errorMessage = 'Login failed';
+            let errorMessage = 'Invalid credentials';
             if (err.response) {
-                errorMessage += ` (${err.response.status}): ${err.response.data?.message || err.response.statusText || 'Invalid credentials'}`;
+                errorMessage = err.response.data?.message || err.response.statusText || 'Invalid credentials';
             } else {
-                errorMessage += `: ${err.message}`;
+                errorMessage = err.message;
             }
-            alert(errorMessage);
+            showToast(errorMessage, 'error');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -45,9 +65,18 @@ const Login = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
-                    <button type="submit" className="btn-primary">Login</button>
+                    <button type="submit" className="btn-primary" disabled={loading}>
+                        {loading ? <LoadingSpinner size="20px" /> : 'Login'}
+                    </button>
                 </form>
             </div>
+            {toast && (
+                <Toast 
+                    message={toast.message} 
+                    type={toast.type} 
+                    onClose={() => setToast(null)} 
+                />
+            )}
         </div>
     );
 };
