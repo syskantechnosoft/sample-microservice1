@@ -1,0 +1,89 @@
+server:
+  port: 8080
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: 
+              - "http://localhost:5173"
+              - "http://localhost:5174"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: customer-service
+          uri: lb://customer-service
+          predicates:
+            - Path=/api/customers/**
+          filters:
+            - AuthenticationFilter
+        - id: account-service
+          uri: lb://account-service
+          predicates:
+            - Path=/api/accounts/**
+          filters:
+            - AuthenticationFilter
+        - id: loan-service
+          uri: lb://loan-service
+          predicates:
+            - Path=/api/loans/**
+          filters:
+            - AuthenticationFilter
+        - id: customer-service-docs
+          uri: lb://customer-service
+          predicates:
+            - Path=/v3/api-docs/customer-service
+          filters:
+            - RewritePath=/v3/api-docs/customer-service, /v3/api-docs
+        - id: account-service-docs
+          uri: lb://account-service
+          predicates:
+            - Path=/v3/api-docs/account-service
+          filters:
+            - RewritePath=/v3/api-docs/account-service, /v3/api-docs
+        - id: loan-service-docs
+          uri: lb://loan-service
+          predicates:
+            - Path=/v3/api-docs/loan-service
+          filters:
+            - RewritePath=/v3/api-docs/loan-service, /v3/api-docs
+eureka:
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    instance-id: ${spring.application.name}:${server.port}
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    config-url: /v3/api-docs/swagger-config
+    urls:
+      - name: customer-service
+        url: /v3/api-docs/customer-service
+      - name: account-service
+        url: /v3/api-docs/account-service
+      - name: loan-service
+        url: /v3/api-docs/loan-service
+  api-docs:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+         include: health,info
+    endpoint:
+      health:
+        show-details: always

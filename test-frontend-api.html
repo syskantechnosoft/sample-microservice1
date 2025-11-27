@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Gateway Test</title>
+</head>
+<body>
+    <h1>API Gateway Test</h1>
+    <button onclick="testRegistration()">Test Registration</button>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testProtected()">Test Protected Endpoint</button>
+    <div id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        async function testRegistration() {
+            try {
+                const response = await fetch(`${API_BASE}/customers/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Frontend Test',
+                        email: 'frontend@test.com',
+                        password: 'test123'
+                    })
+                });
+                const result = await response.text();
+                document.getElementById('result').innerHTML = `Registration: ${result}`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `Registration Error: ${error.message}`;
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_BASE}/customers/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'frontend@test.com',
+                        password: 'test123'
+                    })
+                });
+                const token = await response.text();
+                sessionStorage.setItem('token', token);
+                document.getElementById('result').innerHTML = `Login: ${token}`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `Login Error: ${error.message}`;
+            }
+        }
+        
+        async function testProtected() {
+            try {
+                const token = sessionStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/customers/frontend@test.com`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+                document.getElementById('result').innerHTML = `Protected: ${JSON.stringify(result)}`;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `Protected Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
