@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      containers:
+        - name: config-server
+          image: "{{ .Values.registry }}/config-server:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.services.config-server.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "native"
+          volumeMounts:
+            - name: native-config
+              mountPath: /config
+
+      volumes:
+        - name: native-config
+          configMap:
+            name: native-config-files
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: native-config-files
+data:
+  application.yml: |
+    spring:
+      application:
+        name: config-server
+      cloud:
+        config:
+          server:
+            native:
+              search-locations: file:/config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+spec:
+  selector:
+    app: config-server
+  ports:
+    - port: 80
+      targetPort: {{ .Values.services.config-server.port }}

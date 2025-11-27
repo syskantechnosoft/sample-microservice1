@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loan-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loan-service
+  template:
+    metadata:
+      labels:
+        app: loan-service
+    spec:
+      containers:
+        - name: loan-service
+          image: "{{ .Values.registry }}/loan-service:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.services.loan-service.port }}
+          env:
+            - name: EUREKA_SERVER
+              value: "http://eureka-server"
+            - name: CONFIG_SERVER
+              value: "http://config-server"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loan-service
+spec:
+  selector:
+    app: loan-service
+  ports:
+    - port: 80
+      targetPort: {{ .Values.services.loan-service.port }}

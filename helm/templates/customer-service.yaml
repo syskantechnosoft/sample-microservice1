@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customer-service
+  template:
+    metadata:
+      labels:
+        app: customer-service
+    spec:
+      containers:
+        - name: customer-service
+          image: "{{ .Values.registry }}/customer-service:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.services.customer-service.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: customer-service
+spec:
+  selector:
+    app: customer-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: {{ .Values.services.customer-service.port }}

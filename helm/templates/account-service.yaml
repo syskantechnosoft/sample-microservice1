@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: account-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: account-service
+  template:
+    metadata:
+      labels:
+        app: account-service
+    spec:
+      containers:
+        - name: account-service
+          image: "{{ .Values.registry }}/account-service:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.services.account-service.port }}
+          env:
+            - name: EUREKA_SERVER
+              value: "http://eureka-server"
+            - name: CONFIG_SERVER
+              value: "http://config-server"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: account-service
+spec:
+  selector:
+    app: account-service
+  ports:
+    - port: 80
+      targetPort: {{ .Values.services.account-service.port }}
